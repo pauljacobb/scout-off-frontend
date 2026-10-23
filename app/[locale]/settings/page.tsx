@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
@@ -21,11 +21,10 @@ import PushNotificationToggle from '@/components/PushNotificationToggle';
 import { useWallet } from '@/hooks/useWallet';
 import { useToast } from '@/components/ui/Toast';
 
-export default function SettingsPage({
-  params,
-}: {
-  params: { locale: string };
+export default function SettingsPage(props: {
+  params: Promise<{ locale: string }>;
 }) {
+  const params = use(props.params);
   const locale = params.locale;
   const t = useTranslations('settings');
   const { isAuthenticated, disconnect, publicKey } = useWallet();

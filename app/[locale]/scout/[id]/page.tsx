@@ -8,15 +8,14 @@ import ScoutProfileCard from '@/components/scout/ScoutProfileCard';
 import EmptyState from '@/components/ui/EmptyState';
 
 type PageProps = {
-  params: {
+  params: Promise<{
     locale: string;
     id: string;
-  };
+  }>;
 };
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const t = await getTranslations({
     locale: params.locale,
     namespace: 'scout.profile',
@@ -56,7 +55,8 @@ async function loadScoutProfile(scoutId: string): Promise<Scout | null> {
   }
 }
 
-export default async function ScoutProfilePage({ params }: PageProps) {
+export default async function ScoutProfilePage(props: PageProps) {
+  const params = await props.params;
   const scout = await loadScoutProfile(params.id);
 
   if (!scout) return <ScoutNotFound />;

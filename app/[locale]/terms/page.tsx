@@ -3,14 +3,15 @@ import { getTranslations } from 'next-intl/server';
 import LegalPageLayout from '@/components/ui/LegalPageLayout';
 
 interface TermsPageProps {
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 }
 
-export async function generateMetadata({
-  params,
-}: TermsPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: TermsPageProps,
+): Promise<Metadata> {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'terms' });
 
@@ -22,7 +23,8 @@ export async function generateMetadata({
   });
 }
 
-export default async function TermsPage({ params }: TermsPageProps) {
+export default async function TermsPage(props: TermsPageProps) {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'terms' });
 

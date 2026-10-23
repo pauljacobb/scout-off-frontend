@@ -22,8 +22,9 @@ export const runtime = 'nodejs';
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { playerId: string; milestoneId: string } },
+  props: { params: Promise<{ playerId: string; milestoneId: string }> },
 ) {
+  const params = await props.params;
   const endorsements = MilestoneEndorsementStore.getInstance().listFor(
     params.playerId,
     params.milestoneId,
@@ -48,8 +49,9 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { playerId: string; milestoneId: string } },
+  props: { params: Promise<{ playerId: string; milestoneId: string }> },
 ) {
+  const params = await props.params;
   const wallet = getSessionWallet(req);
   if (!wallet) {
     return privateJson({ error: 'Unauthorized' }, { status: 401 });

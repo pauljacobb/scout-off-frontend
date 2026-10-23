@@ -5,14 +5,15 @@ import { ArrowLeft, ArrowUpRight, Radio, Server, Globe } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 
 interface StatusPageProps {
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 }
 
-export async function generateMetadata({
-  params,
-}: StatusPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: StatusPageProps,
+): Promise<Metadata> {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'status' });
 
@@ -24,7 +25,8 @@ export async function generateMetadata({
   });
 }
 
-export default async function StatusPage({ params }: StatusPageProps) {
+export default async function StatusPage(props: StatusPageProps) {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'status' });
   const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_PAGE_URL;

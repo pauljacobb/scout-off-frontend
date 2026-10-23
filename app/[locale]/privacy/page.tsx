@@ -3,14 +3,15 @@ import { getTranslations } from 'next-intl/server';
 import LegalPageLayout from '@/components/ui/LegalPageLayout';
 
 interface PrivacyPageProps {
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 }
 
-export async function generateMetadata({
-  params,
-}: PrivacyPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: PrivacyPageProps,
+): Promise<Metadata> {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'privacy' });
 
@@ -22,7 +23,8 @@ export async function generateMetadata({
   });
 }
 
-export default async function PrivacyPage({ params }: PrivacyPageProps) {
+export default async function PrivacyPage(props: PrivacyPageProps) {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'privacy' });
 

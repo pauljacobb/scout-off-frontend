@@ -46,8 +46,9 @@ const ALLOWED_MIME_TYPES = new Set([
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  props: { params: Promise<{ id: string }> },
 ) {
+  const params = await props.params;
   const wallet = getSessionWallet(req);
   if (!wallet) {
     return privateJson({ error: 'Unauthorized' }, { status: 401 });

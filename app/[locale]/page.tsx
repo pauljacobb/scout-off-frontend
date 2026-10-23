@@ -40,13 +40,12 @@ const features = [
   },
 ];
 
-export default async function HomePage({
-  params,
-  searchParams,
-}: {
-  params: { locale: string };
-  searchParams?: { reason?: string | string[] };
+export default async function HomePage(props: {
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<{ reason?: string | string[] }>;
 }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'footer' });
 

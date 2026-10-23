@@ -6,9 +6,9 @@ import { locales } from '@/lib/locales';
 
 interface LocaleLayoutProps {
   children: ReactNode;
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 }
 
 export function generateStaticParams() {
@@ -37,11 +37,13 @@ const OG_LOCALES: Record<string, string> = {
  * `meta` namespace. The OG image comes from the sibling
  * `opengraph-image.tsx` route and resolves against the root `metadataBase`.
  */
-export async function generateMetadata({
-  params: { locale },
-}: {
-  params: { locale: string };
+export async function generateMetadata(props: {
+  params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  const params = await props.params;
+
+  const { locale } = params;
+
   const [seo, t] = await Promise.all([
     seoMetadata(),
     getTranslations({ locale, namespace: 'meta' }),
@@ -73,10 +75,13 @@ export async function generateMetadata({
   };
 }
 
-export default function LocaleLayout({
-  children,
-  params: { locale },
-}: LocaleLayoutProps) {
+export default async function LocaleLayout(props: LocaleLayoutProps) {
+  const params = await props.params;
+
+  const { locale } = params;
+
+  const { children } = props;
+
   setRequestLocale(locale);
 
   // `display: contents` avoids introducing a layout box while still exposing

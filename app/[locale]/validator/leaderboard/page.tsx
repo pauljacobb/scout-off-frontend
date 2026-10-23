@@ -9,11 +9,10 @@ import {
 
 export const revalidate = 300;
 
-export default async function ValidatorLeaderboardPage({
-  searchParams,
-}: {
-  searchParams?: { range?: string };
+export default async function ValidatorLeaderboardPage(props: {
+  searchParams?: Promise<{ range?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const range = parseValidatorLeaderboardRange(searchParams?.range);
   return (
     <div className="max-w-3xl mx-auto flex flex-col gap-6">

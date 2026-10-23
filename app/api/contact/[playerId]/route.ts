@@ -31,8 +31,9 @@ export const runtime = 'nodejs';
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { playerId: string } },
+  props: { params: Promise<{ playerId: string }> },
 ) {
+  const params = await props.params;
   const scoutWallet = getSessionWallet(req);
   if (!scoutWallet) {
     return privateJson({ error: 'Unauthorized' }, { status: 401 });

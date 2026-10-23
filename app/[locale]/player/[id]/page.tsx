@@ -12,11 +12,10 @@ export const revalidate = 60;
  * previews and a faster LCP); interactive parts live in PlayerProfileClient.
  * The JSON-LD block is rendered server-side by ./layout.tsx.
  */
-export default async function PlayerProfilePage({
-  params,
-}: {
-  params: { locale: string; id: string };
+export default async function PlayerProfilePage(props: {
+  params: Promise<{ locale: string; id: string }>;
 }) {
+  const params = await props.params;
   let player: Player | null = null;
   try {
     player = (await getPlayer(params.id)) as Player | null;

@@ -5,7 +5,7 @@ import { hashCanonicalCvContent, verifyCvToken } from '@/lib/cvSigning';
 import type { Milestone, Player } from '@/types';
 
 interface VerifyPageProps {
-  params: { locale: string; token: string };
+  params: Promise<{ locale: string; token: string }>;
 }
 
 export const runtime = 'nodejs';
@@ -41,7 +41,8 @@ function Result({
   );
 }
 
-export default async function VerifyPage({ params }: VerifyPageProps) {
+export default async function VerifyPage(props: VerifyPageProps) {
+  const params = await props.params;
   const signed = verifyCvToken(params.token);
   if (!signed) {
     return (

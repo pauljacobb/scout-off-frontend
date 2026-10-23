@@ -7,9 +7,9 @@ import { ArrowLeft, Sparkles } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 
 interface ChangelogPageProps {
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 }
 
 type ChangelogSectionType = 'added' | 'improved' | 'fixed';
@@ -90,9 +90,10 @@ function loadChangelogEntries(): ChangelogEntry[] {
   }
 }
 
-export async function generateMetadata({
-  params,
-}: ChangelogPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: ChangelogPageProps,
+): Promise<Metadata> {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'changelog' });
 
@@ -104,7 +105,8 @@ export async function generateMetadata({
   });
 }
 
-export default async function ChangelogPage({ params }: ChangelogPageProps) {
+export default async function ChangelogPage(props: ChangelogPageProps) {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'changelog' });
   const changelogEntries = loadChangelogEntries().sort((left, right) => {

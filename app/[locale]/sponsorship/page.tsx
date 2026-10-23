@@ -3,14 +3,15 @@ import { getTranslations } from 'next-intl/server';
 import SponsorshipClient from './SponsorshipClient';
 
 interface SponsorshipPageProps {
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 }
 
-export async function generateMetadata({
-  params,
-}: SponsorshipPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: SponsorshipPageProps,
+): Promise<Metadata> {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: 'sponsorship' });
 
