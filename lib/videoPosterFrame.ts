@@ -142,6 +142,11 @@ export function blackPixelJpeg(): Buffer {
   ]);
 }
 
+/** True when `frame` is the 1×1 placeholder rather than a real video frame. */
+export function isPlaceholderFrame(frame: PosterFrameResult): boolean {
+  return frame.width === 1 && frame.height === 1;
+}
+
 /**
  * Computes a stable cache key for a (videoCid, seekSeconds) pair so the
  * poster route can check whether a poster has already been generated without

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getMediaProxyUrl } from '@/lib/mediaUrl';
 
 const DEFAULT_TIMESTAMP_SECONDS = 1;
 
@@ -16,18 +17,18 @@ interface UseVideoPosterFrameOptions {
    * decode entirely — no range requests, no CORS issues, shared cache hit
    * for every viewer of the same clip.
    *
-   * Supply the CID only; the hook resolves it via the configured IPFS gateway
-   * (`NEXT_PUBLIC_IPFS_GATEWAY_URL` or the Pinata public gateway).
+   * Supply the CID only; the hook loads it through the `/api/media` proxy,
+   * which validates the CID and applies the content denylist.
    */
   posterCid?: string | null;
 }
 
-/** Resolves a poster CID to a public gateway URL. */
+/**
+ * Resolves a poster CID through the app's own media proxy, which validates the
+ * CID and enforces the moderation denylist before reaching a gateway.
+ */
 function posterCidToUrl(cid: string): string {
-  const base =
-    process.env.NEXT_PUBLIC_IPFS_GATEWAY_URL ??
-    'https://gateway.pinata.cloud/ipfs';
-  return `${base.replace(/\/$/, '')}/${cid}`;
+  return getMediaProxyUrl(cid);
 }
 
 /**

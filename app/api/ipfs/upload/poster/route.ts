@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { privateJson } from '@/lib/httpResponses';
 import { getSessionWallet } from '@/lib/session';
-import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { isValidCid, normalizeCid } from '@/lib/cid';
 import { createRequestLogger } from '@/lib/logger';
 import {
   getPinataCredentials,
@@ -10,6 +11,7 @@ import {
 } from '@/lib/pinataConfig';
 import {
   extractPosterFrameFromBuffer,
+  isPlaceholderFrame,
   posterCacheKey,
 } from '@/lib/videoPosterFrame';
 import { pinStreamedFileToIPFS } from '@/app/api/ipfs/upload/complete/route';
@@ -41,8 +43,10 @@ export const runtime = 'nodejs';
  * Response:
  *   201 { posterCid: string, width: number, height: number,
  *          timestampSeconds: number, cacheKey: string }
- *   400 { error: string }  — missing / invalid body
+ *   400 { error: string }  — missing / invalid body or videoCid
+ *   401 { error: string }  — no signed-in wallet session
  *   429 { error: string }  — rate limited
+ *   501 { error: string }  — server-side frame extraction not available
  *   502 { error: string }  — gateway or Pinata failure
  *   503 { error: string }  — Pinata not configured
  */
@@ -61,10 +65,13 @@ export async function POST(req: NextRequest) {
     return privateJson({ error: PINATA_NOT_CONFIGURED_ERROR }, { status: 503 });
   }
 
+  // Pinning spends this deployment's Pinata quota, so callers must hold a
+  // session — mirrors the other IPFS upload routes.
   const wallet = getSessionWallet(req);
-  const ip = getClientIp(req);
-  const key = wallet ? `wallet:${wallet}` : ip;
-  const rl = await checkRateLimit(`ipfs-poster:${key}`, RATE_LIMIT);
+  if (!wallet) {
+    return privateJson({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const rl = await checkRateLimit(`ipfs-poster:wallet:${wallet}`, RATE_LIMIT);
   if (rl.limited) {
     const retryAfter = rl.retryAfterSec ?? 60;
     return privateJson(
@@ -80,11 +87,20 @@ export async function POST(req: NextRequest) {
     return privateJson({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { videoCid, seekSeconds } = (body ?? {}) as Record<string, unknown>;
+  const { videoCid: rawVideoCid, seekSeconds } = (body ?? {}) as Record<
+    string,
+    unknown
+  >;
 
-  if (typeof videoCid !== 'string' || !videoCid.trim()) {
+  if (typeof rawVideoCid !== 'string' || !rawVideoCid.trim()) {
     return privateJson({ error: 'videoCid is required' }, { status: 400 });
   }
+  // Validate before the value is interpolated into the gateway URL so callers
+  // can't shape arbitrary upstream requests (path traversal, query injection).
+  if (!isValidCid(rawVideoCid)) {
+    return privateJson({ error: 'Invalid videoCid' }, { status: 400 });
+  }
+  const videoCid = normalizeCid(rawVideoCid);
 
   const seek =
     typeof seekSeconds === 'number' && Number.isFinite(seekSeconds)
@@ -96,8 +112,8 @@ export async function POST(req: NextRequest) {
   // Fetch the leading bytes of the video from the IPFS gateway.
   // We use a byte-range request so we never download the whole file.
   const gatewayBase =
-    process.env.IPFS_GATEWAY_URL ?? 'https://gateway.pinata.cloud/ipfs';
-  const videoUrl = `${gatewayBase.replace(/\/$/, '')}/${videoCid}`;
+    process.env.NEXT_PUBLIC_IPFS_GATEWAY ?? 'https://gateway.pinata.cloud/ipfs';
+  const videoUrl = `${gatewayBase.replace(/\/$/, '')}/${encodeURIComponent(videoCid)}`;
 
   let videoBytes: Uint8Array;
   try {
@@ -129,6 +145,17 @@ export async function POST(req: NextRequest) {
 
   // Extract poster frame from the scanned bytes.
   const frame = extractPosterFrameFromBuffer(videoBytes, seek);
+
+  // Real frame extraction isn't implemented yet (see lib/videoPosterFrame.ts):
+  // the extractor only returns a 1×1 placeholder. Don't pin it — a stored
+  // placeholder CID would replace the working client-side poster with a black
+  // square for every viewer. Callers keep using the client-side fallback.
+  if (isPlaceholderFrame(frame)) {
+    return privateJson(
+      { error: 'Server-side poster extraction is not available yet' },
+      { status: 501 },
+    );
+  }
 
   // Pin the JPEG to IPFS.
   let posterCid: string;
